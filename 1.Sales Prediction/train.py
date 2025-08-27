@@ -25,7 +25,7 @@ cdn_condition = df.CompetitionDistance.isna()
 df.loc[cdn_condition, "HasCompetition"] = 0
 df.loc[~cdn_condition, "HasCompetition"] = 1
 df["HasCompetition"] = df["HasCompetition"].astype("category")
-df.loc[df["HasCompetition"] == 0, "CompetitionDistance"] = -1
+df.loc[df["HasCompetition"] == 0, "CompetitionDistance"] = 0
 
 # Category conversion
 categorical_cols = [
@@ -55,14 +55,14 @@ def MakeNaNFill(data):
     _cols = data.select_dtypes(include="category").columns
     for c in _cols:
         data[c] = data[c].astype("Float32")
-    return data.fillna(-1)
+    return data.fillna(0)
 
 X_filled = MakeNaNFill(X.copy())
 print("--> NaNs filled and encoded")
 
 # ===== 3. Scaling & PCA =====
-scaler = RobustScaler().fit(X_filled)
-X_scaled = scaler.transform(X_filled)
+scaler = RobustScaler().fit(X_filled.values)
+X_scaled = scaler.transform(X_filled.values)
 print("--> data was scaled")
 
 pca = PCA(n_components=8).fit(X_scaled)
@@ -73,6 +73,7 @@ print("--> data was reduced")
 count_samples = X.shape[1] + 1
 distances, _ = NearestNeighbors(n_neighbors=count_samples).fit(X_reduced).kneighbors(X_reduced)
 distances = np.sort(distances[:, count_samples - 1])
+print("--> distances made (nearest neighbors)")
 
 eps_value_index = KneeLocator(
     range(len(distances)),
@@ -82,6 +83,8 @@ eps_value_index = KneeLocator(
 ).knee
 print(f"[INFO] DBSCAN eps value: {distances[eps_value_index]:.4f}")
 
+print("--> DBSCAN loading...")
+
 dbscan = DBSCAN(eps=distances[eps_value_index], min_samples=3)
 labels = dbscan.fit_predict(X_reduced)
 # Clear attributes that are not needed at inference
@@ -89,6 +92,7 @@ if hasattr(dbscan, 'components_'):
     del dbscan.components_
 if hasattr(dbscan, 'core_sample_indices_'):
     del dbscan.core_sample_indices_
+
 print(f"[INFO] DBSCAN labels: {np.unique(labels)}")
 
 
