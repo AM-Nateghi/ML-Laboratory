@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>فرم پیش‌بینی فروش</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1 class="title">🚀 پنل پیش‌بینی فروش</h1>
+        <p class="subtitle">سیستم هوشمند تحلیل و پیش‌بینی فروش</p>
+      </div>
+
+      <form id="predictForm" class="form">
+        <!-- Basic Information -->
+        <div class="form-section">
+          <div class="section-title">
+            <span class="icon">📊</span>
+            اطلاعات پایه
+          </div>
+
+          <div class="form-group">
+            <label class="label">تعداد مشتریان</label>
+            <input
+              type="number"
+              name="Customers"
+              class="input"
+              placeholder="بین 20 تا 6000"
+            />
+            <span class="error-message" id="err_Customers"></span>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">نوع فروشگاه</label>
+              <select name="StoreType" class="select">
+                <option value="">انتخاب کنید</option>
+                <option value="0">🛒 سوپرمارکت کوچک</option>
+                <option value="1">🏢 هایپرمارکت</option>
+                <option value="2">🎯 فروشگاه تخصصی</option>
+                <option value="3">🏬 فروشگاه زنجیره‌ای بزرگ</option>
+              </select>
+              <span class="error-message" id="err_StoreType"></span>
+            </div>
+
+            <div class="form-group">
+              <label class="label">تنوع کالا</label>
+              <select name="Assortment" class="select">
+                <option value="">انتخاب کنید</option>
+                <option value="0">کم</option>
+                <option value="1">متوسط</option>
+                <option value="2">زیاد</option>
+              </select>
+              <span class="error-message" id="err_Assortment"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Holiday Information -->
+        <div class="form-section">
+          <div class="section-title">
+            <span class="icon">📅</span>
+            اطلاعات تعطیلات
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">تعطیلات رسمی</label>
+              <select name="StateHoliday" class="select">
+                <option value="false">روز کاری</option>
+                <option value="true">🏖️ تعطیل رسمی</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="label">تعطیلی مدارس</label>
+              <select name="SchoolHoliday" class="select">
+                <option value="false">مدارس باز</option>
+                <option value="true">🏫 مدارس تعطیل</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="label">پروموشن فعال</label>
+            <select name="Promo" class="select">
+              <option value="false">بدون تخفیف</option>
+              <option value="true">🎉 دارای تخفیف</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Competition -->
+        <div class="form-section">
+          <div class="section-title">
+            <span class="icon">⚔️</span>
+            اطلاعات رقبا
+          </div>
+
+          <div class="checkbox-group">
+            <input
+              type="checkbox"
+              id="HasCompetition"
+              name="HasCompetition"
+              class="checkbox"
+            />
+            <label for="HasCompetition" class="checkbox-label"
+              >وجود رقیب در منطقه</label
+            >
+          </div>
+
+          <div id="competitionFields" class="conditional-fields">
+            <div class="form-row-3">
+              <input
+                type="number"
+                step="0.1"
+                name="CompetitionDistance"
+                placeholder="فاصله رقبا (متر)"
+                class="input"
+              />
+              <input
+                type="number"
+                name="CompetitionOpenSinceMonth"
+                placeholder="ماه شروع (1-12)"
+                class="input"
+              />
+              <input
+                type="number"
+                name="CompetitionOpenSinceYear"
+                placeholder="سال شروع"
+                class="input"
+              />
+            </div>
+          </div>
+          <span class="error-message" id="err_Competition"></span>
+        </div>
+
+        <!-- Promo2 -->
+        <div class="form-section">
+          <div class="section-title">
+            <span class="icon">🎯</span>
+            پروموشن پیشرفته
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="Promo2" name="Promo2" class="checkbox" />
+            <label for="Promo2" class="checkbox-label"
+              >پروموشن دوره‌ای فعال</label
+            >
+          </div>
+
+          <div id="promo2Fields" class="conditional-fields">
+            <div class="form-row-3">
+              <input
+                type="number"
+                name="Promo2SinceWeek"
+                placeholder="از هفته"
+                class="input"
+              />
+              <input
+                type="number"
+                name="Promo2SinceYear"
+                placeholder="از سال"
+                class="input"
+              />
+              <input
+                type="number"
+                name="PromoInterval"
+                placeholder="فاصله زمانی"
+                class="input"
+              />
+            </div>
+          </div>
+          <span class="error-message" id="err_Promo2"></span>
+        </div>
+
+        <!-- Date -->
+        <div class="form-section">
+          <div class="section-title">
+            <span class="icon">🗓️</span>
+            تاریخ پیش‌بینی
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="label">ماه</label>
+              <input
+                type="number"
+                name="month"
+                placeholder="1 تا 12"
+                class="input"
+                min="1"
+                max="12"
+              />
+            </div>
+            <div class="form-group">
+              <label class="label">سال</label>
+              <input
+                type="number"
+                name="year"
+                placeholder="مثال: 2024"
+                class="input"
+                min="2020"
+                max="2030"
+              />
+            </div>
+          </div>
+          <span class="error-message" id="err_Date"></span>
+        </div>
+
+        <button type="submit" class="submit-btn">
+          🚀 محاسبه پیش‌بینی فروش
+        </button>
+      </form>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>در حال پردازش...</p>
+      </div>
+
+      <div id="result" class="result"></div>
+    </div>
+
+    <script src="static/script.js"></script>
+  </body>
+</html>

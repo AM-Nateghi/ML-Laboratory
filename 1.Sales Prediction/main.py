@@ -1,9 +1,13 @@
+from time import time
 import numpy as np
 import joblib
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from typing import Optional
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+print("Loading...")
 
 # بارگذاری artifact ذخیره شده
 artifact = joblib.load("sales_cluster_models.pkl")
@@ -13,7 +17,11 @@ dbscan = artifact["cluster_model"]
 models = artifact["models"]
 label_encoders = artifact["label_encoders"]
 
+print("Loading complete.")
+
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 class InputData(BaseModel):
     Customers: float = Field(..., ge=20, le=6000)
@@ -36,9 +44,11 @@ class InputData(BaseModel):
     month: float
     year: float
 
+
 @app.get("/")
 def read_index():
-    return FileResponse("static/index.html")
+    return FileResponse("static/sales_prediction_ui.html")
+
 
 @app.post("/predict")
 def predict(data: InputData):
