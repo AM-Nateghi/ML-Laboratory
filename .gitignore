@@ -1,2 +1,4 @@
 .venv/
 .venv/*
+1.Sales Prediction/sales_cluster_models.pkl
+1.Sales Prediction/__pycache__/
