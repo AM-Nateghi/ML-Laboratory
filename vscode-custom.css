@@ -1,0 +1,13 @@
+/* فقط روی پیام‌های چت Copilot اعمال می‌شه */
+.chat-message, .copilot-chat-message, .monaco-pane .pane-body {
+  font-family: "Estedad", "Tahoma", sans-serif !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+/* جلوگیری از اعمال روی کدها */
+.monaco-editor .view-lines {
+  font-family: inherit !important;
+  direction: ltr !important;
+  text-align: left !important;
+}
