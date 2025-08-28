@@ -8,11 +8,25 @@ from typing import Optional, Union
 from fastapi.responses import FileResponse
 import uvicorn
 
+filename = "sales_cluster_models.pkl"
+
+def get_cluster_label_manual(x_reduced, cluster_centers, eps):
+    # x_reduced: داده جدید بعد از pca، shape=(1, n_features)
+    # cluster_centers: لیست مراکز خوشه‌ها، shape=(n_clusters, n_features)
+    # eps: آستانه فاصله برای نویز
+    distances = np.linalg.norm(cluster_centers - x_reduced, axis=1)
+    min_dist = np.min(distances)
+    label = np.argmin(distances)
+    if min_dist > eps:
+        return -1  # نویز
+    return label
+
+
 print("Loading models...")
 
 try:
     # بارگذاری artifact ذخیره شده
-    artifact = joblib.load("sales_cluster_models.pkl")
+    artifact = joblib.load(f"saved_models/{filename}")
     scaler = artifact["scaler"]
     pca = artifact["pca"]
     dbscan = artifact["cluster_model"]
@@ -20,7 +34,7 @@ try:
     label_encoders = artifact["label_encoders"]
     print("✅ Models loaded successfully")
 except FileNotFoundError:
-    print("❌ Error: sales_cluster_models.pkl not found!")
+    print(f"❌ Error: {filename} not found!")
     exit(1)
 except Exception as e:
     print(f"❌ Error loading models: {e}")
@@ -125,11 +139,11 @@ class InputData(BaseModel):
     )
     def validate_optional_numeric(cls, v):
         if v == "" or v is None:
-            return -1
+            return 0
         try:
             return float(v)
         except (ValueError, TypeError):
-            return -1
+            return 0
 
 
 @app.get("/")
@@ -176,15 +190,15 @@ def predict(data: InputData):
             or data.PromoInterval == 0
         ):
             return {
-                "error": "در صورت فعال بودن پروموشن پیشرفته، تمام فیلدهای مربوطه را پر کنید"
+                "error": "در کدهای پروژه شما ساختار خوبی دارند و مراحل استاندارد یادگیری ماشین (پیش‌پرصورت فعال بودن پروموشن پیشرفته، تمام فیلدهای مربوطه را پر کنید"
             }
 
         # پیش‌پردازش مشابه آموزش
         x_scaled = scaler.transform(input_array)
         x_reduced = pca.transform(x_scaled)
 
-        # تشخیص خوشه
-        cluster_label = dbscan.fit_predict(x_reduced)[0]
+        # دسته‌بندی دستی
+        cluster_label = get_cluster_label_manual(x_reduced, artifact["cluster_centers"], artifact["cluster_model"].eps)
 
         if cluster_label == -1:
             return {
@@ -219,8 +233,8 @@ def predict(data: InputData):
 # اجرای سرور
 if __name__ == "__main__":
     print("🚀 setup server...")
-    print("📍 Address: http://localhost:8000")
+    print("📍 Address: http://localhost:2007")
     print("📁 Static files: /static")
     print("🔄 To stop: Ctrl+C")
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+    uvicorn.run("main:app", host="0.0.0.0", port=2007, reload=True, log_level="info")

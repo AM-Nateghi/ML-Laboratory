@@ -1,14 +1,18 @@
+import warnings
+
+warnings.filterwarnings("ignore")
 import numpy as np
 import pandas as pd
 import joblib
 from sklearn.preprocessing import RobustScaler, LabelEncoder
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
-from sklearn.cluster import DBSCAN
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.cluster import DBSCAN, KMeans, SpectralClustering
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, silhouette_score
 from kneed import KneeLocator
+from hdbscan import HDBSCAN
 
 cores = round(joblib.cpu_count() * 0.9)
 
@@ -27,21 +31,48 @@ df.loc[~cdn_condition, "HasCompetition"] = 1
 df["HasCompetition"] = df["HasCompetition"].astype("category")
 df.loc[df["HasCompetition"] == 0, "CompetitionDistance"] = 0
 
-# Category conversion
+
+# ===== بهتر: پر کردن داده‌های گمشده =====
+def better_nan_fill(data):
+    for col in data.select_dtypes(include=["category", "object"]).columns:
+        mode = data[col].mode()[0]
+        data[col] = data[col].fillna(mode)
+    for col in data.select_dtypes(include=["float", "int", "Float32"]).columns:
+        median = data[col].median()
+        data[col] = data[col].fillna(median)
+    return data
+
+
+df = better_nan_fill(df)
+
+# ===== type optimization =====
 categorical_cols = [
-    "Promo","StateHoliday","SchoolHoliday","StoreType","Assortment",
-    "Promo2","PromoInterval","month","CompetitionOpenSinceMonth",
-    "Promo2SinceYear","year"
+    "Promo",
+    "StateHoliday",
+    "SchoolHoliday",
+    "StoreType",
+    "Assortment",
+    "Promo2",
+    "PromoInterval",
+    "month",
+    "CompetitionOpenSinceMonth",
+    "Promo2SinceYear",
+    "year",
 ]
 df[categorical_cols] = df[categorical_cols].astype("category")
-for col in ["Sales","CompetitionOpenSinceYear",
-            "CompetitionDistance","Promo2SinceWeek","Customers"]:
+for col in [
+    "Sales",
+    "CompetitionOpenSinceYear",
+    "CompetitionDistance",
+    "Promo2SinceWeek",
+    "Customers",
+]:
     df[col] = df[col].astype("Float32")
 print("--> data was optimized")
 
 # Label Encoding
 label_encodes = {}
-for col in ["PromoInterval","StoreType","Assortment","StateHoliday"]:
+for col in ["PromoInterval", "StoreType", "Assortment", "StateHoliday"]:
     le = LabelEncoder().fit(df[col])
     df[col] = le.transform(df[col])
     label_encodes[col] = le
@@ -50,51 +81,59 @@ for col in ["PromoInterval","StoreType","Assortment","StateHoliday"]:
 X = df.drop("Sales", axis=1)
 y = df["Sales"]
 
-# Fill NaNs in categoricals
-def MakeNaNFill(data):
-    _cols = data.select_dtypes(include="category").columns
-    for c in _cols:
-        data[c] = data[c].astype("Float32")
-    return data.fillna(0)
-
-X_filled = MakeNaNFill(X.copy())
-print("--> NaNs filled and encoded")
-
 # ===== 3. Scaling & PCA =====
-scaler = RobustScaler().fit(X_filled.values)
-X_scaled = scaler.transform(X_filled.values)
+scaler = RobustScaler().fit(X.values)
+X_scaled = scaler.transform(X.values)
 print("--> data was scaled")
 
 pca = PCA(n_components=8).fit(X_scaled)
 X_reduced = pca.transform(X_scaled)
 print("--> data was reduced")
 
-# ===== 4. DBSCAN Clustering =====
-count_samples = X.shape[1] + 1
-distances, _ = NearestNeighbors(n_neighbors=count_samples).fit(X_reduced).kneighbors(X_reduced)
-distances = np.sort(distances[:, count_samples - 1])
-print("--> distances made (nearest neighbors)")
+# ===== 4b. KMeans Clustering =====
+# تعیین تعداد خوشه‌ها با elbow method
+print("--> KMeans loading...")
+inertia = []
+K_range = range(2, 10)
+for k in K_range:
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(X_reduced)
+    inertia.append(kmeans.inertia_)
+# انتخاب تعداد خوشه بهینه (elbow)
+knee_kmeans = (
+    KneeLocator(K_range, inertia, curve="convex", direction="decreasing").knee or 3
+)
+print(f"[INFO] KMeans optimal clusters: {knee_kmeans}")
+kmeans = KMeans(n_clusters=knee_kmeans, random_state=42)
+kmeans_labels = kmeans.fit_predict(X_reduced)
+print(f"[INFO] KMeans labels: {np.unique(kmeans_labels)}")
 
-eps_value_index = KneeLocator(
-    range(len(distances)),
-    distances,
-    curve="convex",
-    direction="increasing",
-).knee
-print(f"[INFO] DBSCAN eps value: {distances[eps_value_index]:.4f}")
+# ===== 4c. Spectral Clustering =====
+print("--> HDBSCAN parameter search (using sample)...")
+sample_size = min(25000, X_reduced.shape[0])
+sample_idx = np.random.default_rng(42).choice(
+    X_reduced.shape[0], sample_size, replace=False
+)
+X_reduced_sample = X_reduced[sample_idx]
 
-print("--> DBSCAN loading...")
+print("--> SpectralClustering loading...")
+spectral_n_clusters = knee_kmeans  # Use same optimal clusters as KMeans for consistency
+spectral = SpectralClustering(
+    n_clusters=spectral_n_clusters,
+    assign_labels="kmeans",
+    random_state=42,
+    n_jobs=cores,
+    affinity="nearest_neighbors",
+)
+labels = spectral.fit_predict(X_reduced_sample)
+print(f"[INFO] SpectralClustering labels: {np.unique(labels)}")
 
-dbscan = DBSCAN(eps=distances[eps_value_index], min_samples=3)
-labels = dbscan.fit_predict(X_reduced)
-# Clear attributes that are not needed at inference
-if hasattr(dbscan, 'components_'):
-    del dbscan.components_
-if hasattr(dbscan, 'core_sample_indices_'):
-    del dbscan.core_sample_indices_
-
-print(f"[INFO] DBSCAN labels: {np.unique(labels)}")
-
+# emission labels into all of out data
+rf_x_train, rf_x_test, rf_y_train, rf_y_test = train_test_split(X_reduced_sample, labels, test_size=0.2, random_state=42)
+rf_emission = RandomForestClassifier(max_depth=10, n_jobs=cores, random_state=42)
+rf_emission.fit(rf_x_train, rf_y_train)
+print(f"[INFO] RandomForestClassifier accuracy: {rf_emission.score(rf_x_test, rf_y_test)}", end="\n\n")
+labels = rf_emission.predict(X_reduced)
 
 # ===== 5. Train models per cluster =====
 labeled_X = np.column_stack((X_scaled, labels))
@@ -117,17 +156,58 @@ for l in cluster_labels:
     rf_model.fit(train_x, train_y)
     print(f"[Cluster {l}] R2 score:", r2_score(test_y, rf_model.predict(test_x)))
 
-    if hasattr(rf_model, 'oob_prediction_'):
+    if hasattr(rf_model, "oob_prediction_"):
         del rf_model.oob_prediction_
     models[l] = rf_model
 
+# Calculate cluster centers (ignore noise label -1)
+cluster_centers = np.array(
+    [X_reduced[labels == i].mean(axis=0) for i in np.unique(labels) if i != -1]
+)
+
+# ===== 5b. Train models per KMeans cluster =====
+kmeans_models = {}
+for l in np.unique(kmeans_labels):
+    idx = kmeans_labels == l
+    train_x, test_x, train_y, test_y = train_test_split(
+        X_scaled[idx],
+        y[idx],
+        test_size=0.2,
+        random_state=42,
+    )
+    rf_model = RandomForestRegressor(n_estimators=200, max_depth=20, n_jobs=cores)
+    rf_model.fit(train_x, train_y)
+    print(f"[KMeans Cluster {l}] R2 score:", r2_score(test_y, rf_model.predict(test_x)))
+    if hasattr(rf_model, "oob_prediction_"):
+        del rf_model.oob_prediction_
+    kmeans_models[l] = rf_model
+cluster_centers_kmeans = kmeans.cluster_centers_
+
+
 # ===== 6. Save artifacts =====
-artifact = {
+
+# ذخیره مدل KMeans
+kmeans_artifact = {
     "scaler": scaler,
     "pca": pca,
-    "cluster_model": dbscan,
-    "models": models,
-    "label_encoders": label_encodes
+    "cluster_model": kmeans,
+    "models": kmeans_models,
+    "label_encoders": label_encodes,
+    "cluster_centers": cluster_centers_kmeans,
 }
-joblib.dump(artifact, "sales_cluster_models.pkl", compress=5)
-print("✅ model and its components saved → sales_cluster_models.pkl")
+joblib.dump(kmeans_artifact, "sales_kmeans_models.pkl", compress=5)
+print("✅ KMeans model and its components saved → sales_kmeans_models.pkl")
+
+# ذخیره مدل SpectralClustering
+spectral_artifact = {
+    "scaler": scaler,
+    "pca": pca,
+    "cluster_model": spectral,
+    "models": models,
+    "label_encoders": label_encodes,
+    "cluster_centers": cluster_centers,
+}
+joblib.dump(spectral_artifact, "sales_spectral_models.pkl", compress=5)
+print(
+    "✅ SpectralClustering model and its components saved → sales_spectral_models.pkl"
+)
