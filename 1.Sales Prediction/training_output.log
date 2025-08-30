@@ -1,0 +1,24 @@
+--> File read
+--> data was optimized
+--> data was scaled
+--> data was reduced
+--> KMeans loading...
+[INFO] KMeans optimal clusters: 5
+[INFO] KMeans labels: [0 1 2 3 4]
+--> HDBSCAN parameter search (using sample)...
+--> SpectralClustering loading...
+[INFO] SpectralClustering labels: [0 1 2 3 4]
+[INFO] RandomForestClassifier accuracy: 0.999
+
+[Cluster 0] R2 score: 0.9717178009436723
+[Cluster 1] R2 score: 0.9608308533304125
+[Cluster 2] R2 score: 0.9672623070878568
+[Cluster 3] R2 score: 0.9679645144761849
+[Cluster 4] R2 score: 0.9173180336344448
+[KMeans Cluster 0] R2 score: 0.9527654496061162
+[KMeans Cluster 1] R2 score: 0.9729918693208719
+[KMeans Cluster 2] R2 score: 0.9622248092337002
+[KMeans Cluster 3] R2 score: 0.919854187257049
+[KMeans Cluster 4] R2 score: 0.9713072862911759
+✅ KMeans model and its components saved → sales_kmeans_models.pkl
+✅ SpectralClustering model and its components saved → sales_spectral_models.pkl
