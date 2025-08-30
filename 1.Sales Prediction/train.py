@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, silhouette_score
 from kneed import KneeLocator
-from hdbscan import HDBSCAN
+# from hdbscan import HDBSCAN  # Not used in current version
 
 cores = round(joblib.cpu_count() * 0.9)
 
