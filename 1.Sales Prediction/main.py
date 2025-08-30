@@ -1,3 +1,7 @@
+import warnings
+
+warnings.filterwarnings("ignore")
+
 from time import time
 import numpy as np
 import joblib
@@ -7,8 +11,10 @@ from pydantic import BaseModel, Field, validator
 from typing import Optional, Union
 from fastapi.responses import FileResponse
 import uvicorn
+import os
 
-filename = "sales_cluster_models.pkl"
+filename = "sales_kmeans_models.pkl"
+
 
 def get_cluster_label_manual(x_reduced, cluster_centers, eps):
     # x_reduced: داده جدید بعد از pca، shape=(1, n_features)
@@ -26,10 +32,12 @@ print("Loading models...")
 
 try:
     # بارگذاری artifact ذخیره شده
-    artifact = joblib.load(f"saved_models/{filename}")
+    artifact = joblib.load(
+        os.path.join(os.path.dirname(__file__), "saved_models", filename)
+    )
     scaler = artifact["scaler"]
     pca = artifact["pca"]
-    dbscan = artifact["cluster_model"]
+    cluster_model = artifact["cluster_model"]
     models = artifact["models"]
     label_encoders = artifact["label_encoders"]
     print("✅ Models loaded successfully")
@@ -41,7 +49,9 @@ except Exception as e:
     exit(1)
 
 app = FastAPI(title="Sales Prediction API", description="سیستم پیش‌بینی فروش")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 class InputData(BaseModel):
@@ -148,7 +158,7 @@ class InputData(BaseModel):
 
 @app.get("/")
 def read_index():
-    return FileResponse("static/sales_prediction_ui.html")
+    return FileResponse(os.path.join(static_dir, "sales_prediction_ui.html"))
 
 
 @app.post("/predict")
@@ -198,7 +208,8 @@ def predict(data: InputData):
         x_reduced = pca.transform(x_scaled)
 
         # دسته‌بندی دستی
-        cluster_label = get_cluster_label_manual(x_reduced, artifact["cluster_centers"], artifact["cluster_model"].eps)
+        # cluster_label = get_cluster_label_manual(x_reduced, artifact["cluster_centers"], artifact["cluster_model"].eps)
+        cluster_label = cluster_model.predict(x_reduced)[0]  # kmeans
 
         if cluster_label == -1:
             return {
@@ -237,4 +248,4 @@ if __name__ == "__main__":
     print("📁 Static files: /static")
     print("🔄 To stop: Ctrl+C")
 
-    uvicorn.run("main:app", host="0.0.0.0", port=2007, reload=True, log_level="info")
+    uvicorn.run("main:app", host="127.0.0.1", port=2007, reload=True, log_level="info")
