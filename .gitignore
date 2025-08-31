@@ -3,3 +3,12 @@
 1.Sales Prediction/__pycache__/
 1.Sales Prediction/saved_models/
 2.Spam Email Detection/combined_data.csv
+2.Spam Email Detection/*dataset*.csv
+2.Spam Email Detection/extracted_data.csv
+2.Spam Email Detection/large_dataset.csv
+*.pkl
+*_dataset.csv
+__pycache__/
+*.pyc
+.DS_Store
+.env
