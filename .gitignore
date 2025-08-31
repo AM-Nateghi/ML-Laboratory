@@ -2,3 +2,4 @@
 .venv/*
 1.Sales Prediction/__pycache__/
 1.Sales Prediction/saved_models/
+2.Spam Email Detection/combined_data.csv
