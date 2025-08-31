@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سیستم تشخیص ایمیل اسپم</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-animation"></div>
+    
+    <div class="container">
+        <header class="header">
+            <div class="shield-icon">🛡️</div>
+            <h1>سیستم تشخیص ایمیل اسپم</h1>
+            <p class="subtitle">سیستم هوشمند تشخیص ایمیل‌های مشکوک و اسپم</p>
+        </header>
+
+        <main class="main-content">
+            <div class="input-section">
+                <label for="emailInput" class="input-label">
+                    📧 متن ایمیل
+                </label>
+                <p class="input-hint">متن کامل ایمیل را وارد کنید</p>
+                
+                <textarea 
+                    id="emailInput" 
+                    class="email-textarea" 
+                    placeholder="From: sender@example.com&#10;Subject: موضوع ایمیل&#10;&#10;متن کامل ایمیل را اینجا وارد کنید..."
+                    rows="8"
+                ></textarea>
+                
+                <div class="char-counter">
+                    <span id="charCount">0</span> / 10000 کاراکتر
+                </div>
+            </div>
+
+            <div class="sample-section">
+                <h3>نمونه‌های آماده:</h3>
+                <div class="sample-buttons">
+                    <button class="sample-btn clear-btn" onclick="clearEmail()">
+                        پاک کردن 🗑️
+                    </button>
+                    <button class="sample-btn legitimate-btn" onclick="loadLegitimateEmail()">
+                        نمونه معتبر ✅
+                    </button>
+                    <button class="sample-btn spam-btn" onclick="loadSpamEmail()">
+                        نمونه اسپم ⚠️
+                    </button>
+                </div>
+            </div>
+
+            <button id="analyzeBtn" class="analyze-btn" onclick="analyzeEmail()">
+                <span class="btn-icon">🔍</span>
+                تشخیص اسپم
+                <div class="loading-spinner" id="loadingSpinner"></div>
+            </button>
+
+            <div id="errorMessage" class="error-message hidden"></div>
+
+            <div id="resultSection" class="result-section hidden">
+                <div class="result-header">
+                    <span class="result-icon">⚠️</span>
+                    <h3 id="resultTitle">نتیجه تشخیص</h3>
+                </div>
+                
+                <div class="result-content">
+                    <div class="prediction-badge" id="predictionBadge">
+                        <span id="predictionText">اسپم</span>
+                    </div>
+                    
+                    <p id="resultMessage" class="result-message">این ایمیل اسپم تشخیص داده شد</p>
+                    
+                    <div class="confidence-section">
+                        <h4>درجه اطمینان:</h4>
+                        <div class="confidence-container">
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" id="confidenceFill"></div>
+                            </div>
+                            <div class="confidence-labels">
+                                <span class="confidence-label">📧 ایمیل معتبر</span>
+                                <span class="confidence-label">⚠️ ایمیل اسپم</span>
+                            </div>
+                        </div>
+                        <div class="confidence-percentage" id="confidencePercentage">85%</div>
+                    </div>
+                    
+                    <div class="model-info">
+                        <span class="model-label">مدل استفاده شده:</span>
+                        <span id="modelName" class="model-name">NaiveBayes</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>© ۱۴۰۳ سیستم تشخیص ایمیل اسپم - نسخه ۱.۰.۰</p>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
